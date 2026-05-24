@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useOnline } from '../hooks/useOnline'
 import { db } from '../lib/db'
@@ -18,6 +18,21 @@ const ESTATUS_COLOR = {
   'Cerrada administrativa': 'bg-gray-100 text-gray-700',
 }
 
+const CERRADAS = ['Cerrada técnica', 'Cerrada administrativa']
+
+function inicioPeriodo(periodo) {
+  const hoy = new Date()
+  if (periodo === 'semana') {
+    const d = new Date(hoy)
+    d.setDate(hoy.getDate() - hoy.getDay())
+    d.setHours(0, 0, 0, 0)
+    return d
+  }
+  if (periodo === 'mes') return new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+  if (periodo === 'anio') return new Date(hoy.getFullYear(), 0, 1)
+  return null
+}
+
 export default function Dashboard({ onVerOrden, onAutoAbrir }) {
   const { user, perfil, signOut } = useAuth()
   const isOnline = useOnline()
@@ -27,11 +42,12 @@ export default function Dashboard({ onVerOrden, onAutoAbrir }) {
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState(null)
   const [autoAbierta, setAutoAbierta] = useState(false)
+  const [filtroEstatus, setFiltroEstatus] = useState('asignadas')
+  const [filtroPeriodo, setFiltroPeriodo] = useState('mes')
 
   const cargarOrdenes = useCallback(async () => {
     setLoading(true)
 
-    // Descargar órdenes asignadas desde Supabase si hay conexión
     if (isOnline && user) {
       const { data: remotas } = await supabase
         .from('ordenes')
@@ -64,21 +80,19 @@ export default function Dashboard({ onVerOrden, onAutoAbrir }) {
               updated_at: orden.updated_at,
             })
           } else if (!existe.supabase_id) {
-            // Actualizar supabase_id si faltaba (órdenes descargadas antes de este campo)
             await db.ordenes.update(existe.id, { supabase_id: orden.id })
           }
         }
       }
     }
 
-    const todas = await db.ordenes.toArray()
+    const todas = await db.ordenes.where('tecnico_id').equals(user.id).toArray()
     const ordenadas = todas.sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
     setOrdenes(ordenadas)
     const count = await contarPendientes()
     setPendientes(count)
     setLoading(false)
 
-    // Auto-abrir si hay exactamente una orden "Asignada"
     if (!autoAbierta) {
       const asignadas = ordenadas.filter(o => o.estatus === 'Asignada')
       if (asignadas.length === 1) {
@@ -110,6 +124,18 @@ export default function Dashboard({ onVerOrden, onAutoAbrir }) {
       setTimeout(() => setSyncMsg(null), 6000)
     }
   }
+
+  const ordenesFiltradas = useMemo(() => {
+    let resultado = ordenes
+
+    if (filtroEstatus === 'asignadas') resultado = resultado.filter(o => !CERRADAS.includes(o.estatus))
+    if (filtroEstatus === 'cerradas') resultado = resultado.filter(o => CERRADAS.includes(o.estatus))
+
+    const desde = inicioPeriodo(filtroPeriodo)
+    if (desde) resultado = resultado.filter(o => new Date(o.created_at) >= desde)
+
+    return resultado
+  }, [ordenes, filtroEstatus, filtroPeriodo])
 
   return (
     <div className="min-h-screen" style={{ background: '#f1f5f9' }}>
@@ -152,24 +178,47 @@ export default function Dashboard({ onVerOrden, onAutoAbrir }) {
         )}
       </header>
 
-      <div className="px-4 py-4 max-w-lg mx-auto">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-bold text-gray-800">Mis órdenes</h2>
-          <button onClick={cargarOrdenes} className="p-1.5 rounded-lg text-gray-400 active:bg-gray-100">
-            <RefreshCw size={16} />
+      {/* Filtro de período */}
+      <div className="px-4 pt-3 pb-1 flex gap-2 overflow-x-auto">
+        {[['semana', 'Esta semana'], ['mes', 'Este mes'], ['anio', 'Este año'], ['todas', 'Todas']].map(([val, label]) => (
+          <button key={val} onClick={() => setFiltroPeriodo(val)}
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${filtroPeriodo === val ? 'bg-[#0f2744] text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200'}`}>
+            {label}
           </button>
-        </div>
+        ))}
+      </div>
+
+      {/* Filtro de estatus */}
+      <div className="px-4 py-2 flex gap-2 overflow-x-auto">
+        {[['asignadas', 'Asignadas'], ['cerradas', 'Cerradas'], ['todas', 'Todas']].map(([val, label]) => (
+          <button key={val} onClick={() => setFiltroEstatus(val)}
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${filtroEstatus === val ? 'text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200'}`}
+            style={filtroEstatus === val ? { background: 'linear-gradient(135deg, #AA0000, #cc1111)' } : {}}>
+            {label}
+          </button>
+        ))}
+        <button onClick={cargarOrdenes} className="shrink-0 ml-auto p-1.5 bg-white rounded-full text-gray-400 border border-gray-200">
+          <RefreshCw size={14} />
+        </button>
+      </div>
+
+      <div className="px-4 pb-8 max-w-lg mx-auto">
+        {!loading && (
+          <p className="text-xs text-gray-400 mb-3 px-1">
+            {ordenesFiltradas.length} orden{ordenesFiltradas.length !== 1 ? 'es' : ''}
+          </p>
+        )}
 
         {loading ? (
           <div className="text-center py-12 text-gray-400 text-sm">Cargando...</div>
-        ) : ordenes.length === 0 ? (
+        ) : ordenesFiltradas.length === 0 ? (
           <div className="text-center py-16">
             <ClipboardList size={48} className="mx-auto text-gray-200 mb-3" />
-            <p className="text-gray-400 text-sm">No tienes órdenes asignadas</p>
+            <p className="text-gray-400 text-sm">No hay órdenes en esta vista</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {ordenes.map(orden => (
+            {ordenesFiltradas.map(orden => (
               <button key={orden.id} onClick={() => onVerOrden(orden.id)}
                 className={`w-full bg-white rounded-2xl p-4 text-left shadow-sm border active:scale-95 transition-transform ${orden.estatus === 'Asignada' ? 'border-yellow-300 ring-1 ring-yellow-200' : 'border-gray-100'}`}>
                 <div className="flex items-start justify-between gap-2">
