@@ -16,7 +16,7 @@ export default function NuevaOrdenAdmin({ onBack, onCreada }) {
   const [form, setForm] = useState({
     cliente_nombre: '', contacto: '', ubicacion: '',
     oem: '', tipo_servicio: '', observaciones: '', tecnico_id: '', tecnico_nombre: '',
-    numero_os: '',
+    numero_os: '', nci: '',
   })
   const [gps, setGps] = useState(null)
   const [gpsLoading, setGpsLoading] = useState(false)
@@ -76,6 +76,7 @@ export default function NuevaOrdenAdmin({ onBack, onCreada }) {
       tipo_servicio: form.tipo_servicio,
       observaciones: form.observaciones.trim(),
       numero_os: form.numero_os ? parseInt(form.numero_os) : null,
+      nci: form.nci.trim() || null,
       estatus: 'Asignada',
       tecnico_id: form.tecnico_id,
       tecnico_nombre: form.tecnico_nombre,
@@ -130,14 +131,22 @@ export default function NuevaOrdenAdmin({ onBack, onCreada }) {
           {errors.tecnico && <p className="text-red-500 text-xs mt-2">{errors.tecnico}</p>}
         </section>
 
-        {/* Número OS */}
+        {/* Número OS y NCI */}
         <section className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
           <h2 className="font-semibold text-gray-800 mb-3 text-sm">Referencia interna</h2>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Número de OS <span className="text-gray-400 font-normal">(ERP interno)</span></label>
-            <input type="number" value={form.numero_os} onChange={e => set('numero_os', e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#AA0000]"
-              placeholder="Ej. 10842" min="1" />
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Número de OS <span className="text-gray-400 font-normal">(ERP interno)</span></label>
+              <input type="number" value={form.numero_os} onChange={e => set('numero_os', e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#AA0000]"
+                placeholder="Ej. 10842" min="1" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">NCI <span className="text-gray-400 font-normal">(No. de reclamo Terex/Deutz)</span></label>
+              <input type="text" value={form.nci} onChange={e => set('nci', e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#AA0000]"
+                placeholder="Ej. NCI-2026-00123" />
+            </div>
           </div>
         </section>
 

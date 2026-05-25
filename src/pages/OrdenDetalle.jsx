@@ -60,6 +60,15 @@ export default function OrdenDetalle({ ordenId, onBack, onVerReporte }) {
     cargarProgreso()
   }, [recargar, cargarProgreso])
 
+  const handleCerrada = useCallback((email) => {
+    setPaso(null)
+    recargar()
+    cargarProgreso()
+    if (email) {
+      setTimeout(() => onVerReporte(ordenId, email), 300)
+    }
+  }, [recargar, cargarProgreso, ordenId, onVerReporte])
+
   if (!orden) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <p className="text-gray-400 text-sm">Cargando...</p>
@@ -74,7 +83,7 @@ export default function OrdenDetalle({ ordenId, onBack, onVerReporte }) {
   if (paso === 'memoria')     return <MemoriaECUForm  orden={orden} onBack={volverYActualizar} onGuardado={volverYActualizar} />
   if (paso === 'evidencia')   return <EvidenciaForm   orden={orden} onBack={volverYActualizar} onGuardado={volverYActualizar} />
   if (paso === 'trabajo')     return <TrabajoForm     orden={orden} onBack={volverYActualizar} onGuardado={volverYActualizar} />
-  if (paso === 'cierre')      return <CierreForm      orden={orden} onBack={volverYActualizar} onCerrada={volverYActualizar} />
+  if (paso === 'cierre')      return <CierreForm      orden={orden} onBack={volverYActualizar} onCerrada={handleCerrada} />
 
   return (
     <div className="min-h-screen" style={{ background: '#f1f5f9' }}>
@@ -103,6 +112,12 @@ export default function OrdenDetalle({ ordenId, onBack, onVerReporte }) {
               <div className="col-span-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 flex items-center justify-between">
                 <p className="text-xs text-blue-500 font-medium">No. OS (ERP)</p>
                 <p className="font-bold text-blue-700 text-base">{orden.numero_os}</p>
+              </div>
+            ) : null}
+            {orden.nci ? (
+              <div className="col-span-2 bg-orange-50 border border-orange-100 rounded-xl px-3 py-2 flex items-center justify-between">
+                <p className="text-xs text-orange-500 font-medium">NCI (Terex/Deutz)</p>
+                <p className="font-bold text-orange-700 text-base">{orden.nci}</p>
               </div>
             ) : null}
             <div className="col-span-2">

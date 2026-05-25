@@ -71,6 +71,7 @@ export default function Dashboard({ onVerOrden, onAutoAbrir }) {
               tipo_servicio: orden.tipo_servicio,
               observaciones: orden.observaciones,
               numero_os: orden.numero_os || null,
+              nci: orden.nci || null,
               estatus: orden.estatus,
               tecnico_id: orden.tecnico_id,
               tecnico_nombre: orden.tecnico_nombre,
