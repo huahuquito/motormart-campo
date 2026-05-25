@@ -1,11 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { useOrdenCompleta } from '../hooks/useOrdenCompleta'
 import { generarPDFOrden } from '../lib/generarPDF'
-import { enviarReportePorEmail } from '../lib/enviarEmail'
 import { db } from '../lib/db'
 import { formatFecha, formatHora } from '../lib/utils'
 import { LogoPDF } from '../components/Logo'
-import { ArrowLeft, Download, Loader, Mail, CheckCircle, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Download, Loader } from 'lucide-react'
 
 const RESULTADO_LABEL = {
   operativo: 'Equipo operativo',
@@ -307,38 +306,9 @@ function ContenidoReporte({ data }) {
   )
 }
 
-export default function ReportePreview({ ordenId, onBack, autoEmail }) {
+export default function ReportePreview({ ordenId, onBack }) {
   const { data, loading } = useOrdenCompleta(ordenId)
   const [generando, setGenerando] = useState(false)
-  const [emailStatus, setEmailStatus] = useState(null) // null | 'enviando' | 'enviado' | 'error'
-  const emailDisparado = useRef(false)
-
-  useEffect(() => {
-    if (!autoEmail || !data || loading || emailDisparado.current) return
-    emailDisparado.current = true
-    const timer = setTimeout(() => enviarEmailAuto(), 400)
-    return () => clearTimeout(timer)
-  }, [autoEmail, data, loading])
-
-  const enviarEmailAuto = async () => {
-    setEmailStatus('enviando')
-    try {
-      const pdfDataUri = await generarPDFOrden('reporte-pdf-content', `${data.orden.folio}.pdf`, { download: false })
-      await enviarReportePorEmail({
-        email: autoEmail,
-        folio: data.orden.folio,
-        nombre_contacto: data.cierre?.nombre_contacto,
-        pdfDataUri,
-      })
-      const cierre = await db.cierres.where('orden_id').equals(ordenId).first()
-      if (cierre) await db.cierres.update(cierre.id, { email_enviado: true })
-      setEmailStatus('enviado')
-    } catch (e) {
-      console.error('Error enviando email:', e)
-      setEmailStatus('error')
-    }
-  }
-
   const descargar = async () => {
     setGenerando(true)
     try {
