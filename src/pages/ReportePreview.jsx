@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useOrdenCompleta } from '../hooks/useOrdenCompleta'
 import { generarPDFOrden } from '../lib/generarPDF'
+import { enviarReportePorEmail } from '../lib/enviarEmail'
+import { db } from '../lib/db'
 import { formatFecha, formatHora } from '../lib/utils'
 import { LogoPDF } from '../components/Logo'
-import { ArrowLeft, Download, Loader } from 'lucide-react'
+import { ArrowLeft, Download, Loader, Mail, CheckCircle, AlertCircle } from 'lucide-react'
 
 const RESULTADO_LABEL = {
   operativo: 'Equipo operativo',
@@ -79,12 +81,20 @@ function ContenidoReporte({ data }) {
 
       {/* 1. Datos generales */}
       <SeccionTitulo>1. Datos generales del servicio</SeccionTitulo>
-      {orden?.numero_os && (
-        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '4px 10px', marginBottom: 8, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 9, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.05em' }}>No. OS (ERP)</span>
-          <span style={{ fontSize: 13, fontWeight: 800, color: '#1d4ed8' }}>{orden.numero_os}</span>
-        </div>
-      )}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+        {orden?.numero_os && (
+          <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 9, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.05em' }}>No. OS (ERP)</span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: '#1d4ed8' }}>{orden.numero_os}</span>
+          </div>
+        )}
+        {orden?.nci && (
+          <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 6, padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 9, color: '#ea580c', textTransform: 'uppercase', letterSpacing: '0.05em' }}>NCI (Terex/Deutz)</span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: '#c2410c' }}>{orden.nci}</span>
+          </div>
+        )}
+      </div>
       <Grilla>
         <Campo label="Cliente" valor={orden?.cliente_nombre} />
         <Campo label="Contacto" valor={orden?.contacto} />
@@ -266,6 +276,7 @@ function ContenidoReporte({ data }) {
         <>
           <SeccionTitulo>9. Conformidad del cliente</SeccionTitulo>
           <Campo label="Nombre del contacto" valor={cierre.nombre_contacto} />
+          {cierre.email_contacto && <Campo label="Correo electrónico" valor={cierre.email_contacto} />}
           {cierre.sin_firma ? (
             <div style={{ backgroundColor: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 6, padding: '6px 10px', marginTop: 6 }}>
               <p style={{ fontSize: 9, color: '#92400e', margin: 0 }}>Sin firma — {cierre.justificacion_sin_firma}</p>
@@ -296,9 +307,37 @@ function ContenidoReporte({ data }) {
   )
 }
 
-export default function ReportePreview({ ordenId, onBack }) {
+export default function ReportePreview({ ordenId, onBack, autoEmail }) {
   const { data, loading } = useOrdenCompleta(ordenId)
   const [generando, setGenerando] = useState(false)
+  const [emailStatus, setEmailStatus] = useState(null) // null | 'enviando' | 'enviado' | 'error'
+  const emailDisparado = useRef(false)
+
+  useEffect(() => {
+    if (!autoEmail || !data || loading || emailDisparado.current) return
+    emailDisparado.current = true
+    const timer = setTimeout(() => enviarEmailAuto(), 400)
+    return () => clearTimeout(timer)
+  }, [autoEmail, data, loading])
+
+  const enviarEmailAuto = async () => {
+    setEmailStatus('enviando')
+    try {
+      const pdfDataUri = await generarPDFOrden('reporte-pdf-content', `${data.orden.folio}.pdf`, { download: false })
+      await enviarReportePorEmail({
+        email: autoEmail,
+        folio: data.orden.folio,
+        nombre_contacto: data.cierre?.nombre_contacto,
+        pdfDataUri,
+      })
+      const cierre = await db.cierres.where('orden_id').equals(ordenId).first()
+      if (cierre) await db.cierres.update(cierre.id, { email_enviado: true })
+      setEmailStatus('enviado')
+    } catch (e) {
+      console.error('Error enviando email:', e)
+      setEmailStatus('error')
+    }
+  }
 
   const descargar = async () => {
     setGenerando(true)
