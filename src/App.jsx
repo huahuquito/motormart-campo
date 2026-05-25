@@ -25,6 +25,7 @@ export default function App() {
   const { user, loading, esAdmin } = useAuth()
   const [pantalla, setPantalla] = useState('inicio')
   const [ordenActiva, setOrdenActiva] = useState(null) // siempre es el ID local de IndexedDB
+  const [autoEmail, setAutoEmail] = useState(null)
 
   // Garantiza que la orden esté en IndexedDB local y devuelve su ID local
   const resolverOrdenLocal = useCallback(async (ordenSupabase) => {
@@ -55,6 +56,7 @@ export default function App() {
       tipo_servicio:  ordenSupabase.tipo_servicio,
       observaciones:  ordenSupabase.observaciones,
       numero_os:      ordenSupabase.numero_os || null,
+      nci:            ordenSupabase.nci || null,
       estatus:        ordenSupabase.estatus,
       tecnico_id:     ordenSupabase.tecnico_id,
       tecnico_nombre: ordenSupabase.tecnico_nombre,
@@ -73,9 +75,10 @@ export default function App() {
     setPantalla('orden')
   }, [resolverOrdenLocal])
 
-  const irAReporte = useCallback(async (ordenOId) => {
+  const irAReporte = useCallback(async (ordenOId, email = null) => {
     const id = await resolverOrdenLocal(ordenOId)
     setOrdenActiva(id)
+    setAutoEmail(email)
     setPantalla('reporte')
   }, [resolverOrdenLocal])
 
@@ -88,7 +91,7 @@ export default function App() {
     return <OrdenDetalle ordenId={ordenActiva} onBack={() => setPantalla('inicio')} onVerReporte={irAReporte} />
   }
   if (pantalla === 'reporte' && ordenActiva) {
-    return <ReportePreview ordenId={ordenActiva} onBack={() => setPantalla('orden')} />
+    return <ReportePreview ordenId={ordenActiva} onBack={() => { setAutoEmail(null); setPantalla('orden') }} autoEmail={autoEmail} />
   }
 
   // Flujo Administrador
