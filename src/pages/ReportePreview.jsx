@@ -89,7 +89,7 @@ function ContenidoReporte({ data }) {
         )}
         {orden?.nci && (
           <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 6, padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 9, color: '#ea580c', textTransform: 'uppercase', letterSpacing: '0.05em' }}>NCI (Terex/Deutz)</span>
+            <span style={{ fontSize: 9, color: '#ea580c', textTransform: 'uppercase', letterSpacing: '0.05em' }}>NCI</span>
             <span style={{ fontSize: 13, fontWeight: 800, color: '#c2410c' }}>{orden.nci}</span>
           </div>
         )}

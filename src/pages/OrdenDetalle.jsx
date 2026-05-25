@@ -116,7 +116,7 @@ export default function OrdenDetalle({ ordenId, onBack, onVerReporte }) {
             ) : null}
             {orden.nci ? (
               <div className="col-span-2 bg-orange-50 border border-orange-100 rounded-xl px-3 py-2 flex items-center justify-between">
-                <p className="text-xs text-orange-500 font-medium">NCI (Terex/Deutz)</p>
+                <p className="text-xs text-orange-500 font-medium">NCI</p>
                 <p className="font-bold text-orange-700 text-base">{orden.nci}</p>
               </div>
             ) : null}
