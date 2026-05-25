@@ -39,6 +39,7 @@ export default function App() {
       const actualizar = {}
       if (!local.supabase_id) actualizar.supabase_id = ordenSupabase.id
       if (local.numero_os == null && ordenSupabase.numero_os != null) actualizar.numero_os = ordenSupabase.numero_os
+      if (local.nci == null && ordenSupabase.nci != null) actualizar.nci = ordenSupabase.nci
       if (Object.keys(actualizar).length > 0) await db.ordenes.update(local.id, actualizar)
       return local.id
     }
