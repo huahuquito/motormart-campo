@@ -46,60 +46,68 @@ export default function Dashboard({ onVerOrden, onAutoAbrir }) {
   const [filtroPeriodo, setFiltroPeriodo] = useState('mes')
 
   const cargarOrdenes = useCallback(async () => {
+    if (!user) return
     setLoading(true)
 
-    if (isOnline && user) {
-      const { data: remotas } = await supabase
-        .from('ordenes')
-        .select('*')
-        .eq('tecnico_id', user.id)
-        .order('created_at', { ascending: false })
+    try {
+      if (isOnline && user) {
+        const { data: remotas, error: remoteError } = await supabase
+          .from('ordenes')
+          .select('*')
+          .eq('tecnico_id', user.id)
+          .order('created_at', { ascending: false })
 
-      if (remotas) {
-        for (const orden of remotas) {
-          const existe = await db.ordenes.where('folio').equals(orden.folio).first()
-          if (!existe) {
-            await db.ordenes.add({
-              folio: orden.folio,
-              fecha_servicio: orden.fecha_servicio || orden.created_at,
-              cliente_nombre: orden.cliente_nombre,
-              contacto: orden.contacto,
-              ubicacion: orden.ubicacion,
-              gps_lat: orden.gps_lat,
-              gps_lng: orden.gps_lng,
-              oem: orden.oem,
-              tipo_servicio: orden.tipo_servicio,
-              observaciones: orden.observaciones,
-              numero_os: orden.numero_os || null,
-              nci: orden.nci || null,
-              estatus: orden.estatus,
-              tecnico_id: orden.tecnico_id,
-              tecnico_nombre: orden.tecnico_nombre,
-              supabase_id: orden.id,
-              sync_pendiente: false,
-              created_at: orden.created_at,
-              updated_at: orden.updated_at,
-            })
-          } else if (!existe.supabase_id) {
-            await db.ordenes.update(existe.id, { supabase_id: orden.id })
+        if (remoteError) console.error('Error al cargar órdenes remotas:', remoteError)
+
+        if (remotas) {
+          for (const orden of remotas) {
+            const existe = await db.ordenes.where('folio').equals(orden.folio).first()
+            if (!existe) {
+              await db.ordenes.add({
+                folio: orden.folio,
+                fecha_servicio: orden.fecha_servicio || orden.created_at,
+                cliente_nombre: orden.cliente_nombre,
+                contacto: orden.contacto,
+                ubicacion: orden.ubicacion,
+                gps_lat: orden.gps_lat,
+                gps_lng: orden.gps_lng,
+                oem: orden.oem,
+                tipo_servicio: orden.tipo_servicio,
+                observaciones: orden.observaciones,
+                numero_os: orden.numero_os || null,
+                nci: orden.nci || null,
+                estatus: orden.estatus,
+                tecnico_id: orden.tecnico_id,
+                tecnico_nombre: orden.tecnico_nombre,
+                supabase_id: orden.id,
+                sync_pendiente: false,
+                created_at: orden.created_at,
+                updated_at: orden.updated_at,
+              })
+            } else if (!existe.supabase_id) {
+              await db.ordenes.update(existe.id, { supabase_id: orden.id })
+            }
           }
         }
       }
-    }
 
-    const todas = await db.ordenes.where('tecnico_id').equals(user.id).toArray()
-    const ordenadas = todas.sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
-    setOrdenes(ordenadas)
-    const count = await contarPendientes()
-    setPendientes(count)
-    setLoading(false)
+      const todas = await db.ordenes.where('tecnico_id').equals(user.id).toArray()
+      const ordenadas = todas.sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
+      setOrdenes(ordenadas)
+      const count = await contarPendientes()
+      setPendientes(count)
 
-    if (!autoAbierta) {
-      const asignadas = ordenadas.filter(o => o.estatus === 'Asignada')
-      if (asignadas.length === 1) {
-        setAutoAbierta(true)
-        onAutoAbrir(asignadas[0].id)
+      if (!autoAbierta) {
+        const asignadas = ordenadas.filter(o => o.estatus === 'Asignada')
+        if (asignadas.length === 1) {
+          setAutoAbierta(true)
+          onAutoAbrir(asignadas[0].id)
+        }
       }
+    } catch (err) {
+      console.error('Error en cargarOrdenes:', err)
+    } finally {
+      setLoading(false)
     }
   }, [isOnline, user, autoAbierta])
 
