@@ -33,7 +33,7 @@ function inicioPeriodo(periodo) {
   return null
 }
 
-export default function Dashboard({ onVerOrden, onAutoAbrir }) {
+export default function Dashboard({ onVerOrden }) {
   const { user, perfil, signOut } = useAuth()
   const isOnline = useOnline()
   const [ordenes, setOrdenes] = useState([])
@@ -41,7 +41,6 @@ export default function Dashboard({ onVerOrden, onAutoAbrir }) {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState(null)
-  const [autoAbierta, setAutoAbierta] = useState(false)
   const [filtroEstatus, setFiltroEstatus] = useState('asignadas')
   const [filtroPeriodo, setFiltroPeriodo] = useState('mes')
 
@@ -96,22 +95,14 @@ export default function Dashboard({ onVerOrden, onAutoAbrir }) {
       setOrdenes(ordenadas)
       const count = await contarPendientes()
       setPendientes(count)
-
-      if (!autoAbierta) {
-        const asignadas = ordenadas.filter(o => o.estatus === 'Asignada')
-        if (asignadas.length === 1) {
-          setAutoAbierta(true)
-          onAutoAbrir(asignadas[0].id)
-        }
-      }
     } catch (err) {
       console.error('Error en cargarOrdenes:', err)
     } finally {
       setLoading(false)
     }
-  }, [isOnline, user, autoAbierta])
+  }, [isOnline, user])
 
-  useEffect(() => { cargarOrdenes() }, [])
+  useEffect(() => { cargarOrdenes() }, [isOnline, user])
   useEffect(() => { if (isOnline && pendientes > 0) handleSync() }, [isOnline])
 
   const handleSync = async () => {

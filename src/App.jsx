@@ -112,7 +112,6 @@ export default function App() {
   return (
     <Dashboard
       onVerOrden={irAOrden}
-      onAutoAbrir={irAOrden}
     />
   )
 }
