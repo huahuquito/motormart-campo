@@ -140,8 +140,11 @@ export default function Dashboard({ onVerOrden, onAutoAbrir }) {
     if (filtroEstatus === 'asignadas') resultado = resultado.filter(o => !CERRADAS.includes(o.estatus))
     if (filtroEstatus === 'cerradas') resultado = resultado.filter(o => CERRADAS.includes(o.estatus))
 
-    const desde = inicioPeriodo(filtroPeriodo)
-    if (desde) resultado = resultado.filter(o => new Date(o.created_at) >= desde)
+    // No filtrar por período cuando se ven órdenes activas (no cerradas)
+    if (filtroEstatus !== 'asignadas') {
+      const desde = inicioPeriodo(filtroPeriodo)
+      if (desde) resultado = resultado.filter(o => new Date(o.created_at) >= desde)
+    }
 
     return resultado
   }, [ordenes, filtroEstatus, filtroPeriodo])
