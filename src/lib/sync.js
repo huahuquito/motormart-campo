@@ -40,9 +40,9 @@ export async function sincronizar() {
   const equiposPendientes = await db.equipos_orden.filter(o => !!o.sync_pendiente).toArray()
   for (const eq of equiposPendientes) {
     const ordenLocal = await db.ordenes.get(eq.orden_id)
-    if (!ordenLocal) continue
+    if (!ordenLocal?.supabase_id) { resultados.errores++; continue }
     const { id, sync_pendiente, orden_id, ...data } = eq
-    const { error } = await supabase.from('equipos_orden').upsert({ ...data, orden_folio: ordenLocal.folio })
+    const { error } = await supabase.from('equipos_orden').upsert({ ...data, orden_id: ordenLocal.supabase_id }, { onConflict: 'orden_id' })
     if (!error) { await db.equipos_orden.update(id, { sync_pendiente: false }); resultados.ok++ }
     else resultados.errores++
   }
@@ -51,9 +51,9 @@ export async function sincronizar() {
   const tiemposPendientes = await db.tiempos.filter(o => !!o.sync_pendiente).toArray()
   for (const t of tiemposPendientes) {
     const ordenLocal = await db.ordenes.get(t.orden_id)
-    if (!ordenLocal) continue
+    if (!ordenLocal?.supabase_id) { resultados.errores++; continue }
     const { id, sync_pendiente, orden_id, ...data } = t
-    const { error } = await supabase.from('tiempos').upsert({ ...data, orden_folio: ordenLocal.folio })
+    const { error } = await supabase.from('tiempos').upsert({ ...data, orden_id: ordenLocal.supabase_id }, { onConflict: 'orden_id' })
     if (!error) { await db.tiempos.update(id, { sync_pendiente: false }); resultados.ok++ }
     else resultados.errores++
   }
@@ -62,9 +62,9 @@ export async function sincronizar() {
   const diagsPendientes = await db.diagnosticos.filter(o => !!o.sync_pendiente).toArray()
   for (const d of diagsPendientes) {
     const ordenLocal = await db.ordenes.get(d.orden_id)
-    if (!ordenLocal) continue
+    if (!ordenLocal?.supabase_id) { resultados.errores++; continue }
     const { id, sync_pendiente, orden_id, ...data } = d
-    const { error } = await supabase.from('diagnosticos').upsert({ ...data, orden_folio: ordenLocal.folio })
+    const { error } = await supabase.from('diagnosticos').upsert({ ...data, orden_id: ordenLocal.supabase_id }, { onConflict: 'orden_id' })
     if (!error) { await db.diagnosticos.update(id, { sync_pendiente: false }); resultados.ok++ }
     else resultados.errores++
   }
@@ -73,7 +73,7 @@ export async function sincronizar() {
   const evidenciaPendiente = await db.evidencia.filter(o => !!o.sync_pendiente).toArray()
   for (const ev of evidenciaPendiente) {
     const ordenLocal = await db.ordenes.get(ev.orden_id)
-    if (!ordenLocal) continue
+    if (!ordenLocal?.supabase_id) { resultados.errores++; continue }
     try {
       let ruta_storage = ev.ruta_storage
       // Si tiene base64 local y no tiene URL remota, sube la foto
@@ -86,7 +86,7 @@ export async function sincronizar() {
       const { error } = await supabase.from('evidencia').upsert({
         ...data,
         ruta_storage,
-        orden_folio: ordenLocal.folio,
+        orden_id: ordenLocal.supabase_id,
       })
       if (!error) { await db.evidencia.update(ev.id, { sync_pendiente: false }); resultados.ok++ }
       else resultados.errores++
@@ -99,9 +99,9 @@ export async function sincronizar() {
   const partesPendientes = await db.partes.filter(o => !!o.sync_pendiente).toArray()
   for (const p of partesPendientes) {
     const ordenLocal = await db.ordenes.get(p.orden_id)
-    if (!ordenLocal) continue
+    if (!ordenLocal?.supabase_id) { resultados.errores++; continue }
     const { id, sync_pendiente, orden_id, ...data } = p
-    const { error } = await supabase.from('partes').upsert({ ...data, orden_folio: ordenLocal.folio })
+    const { error } = await supabase.from('partes').upsert({ ...data, orden_id: ordenLocal.supabase_id })
     if (!error) { await db.partes.update(id, { sync_pendiente: false }); resultados.ok++ }
     else resultados.errores++
   }
@@ -110,9 +110,9 @@ export async function sincronizar() {
   const memoriasPendientes = await db.memorias_ecu.filter(o => !!o.sync_pendiente).toArray()
   for (const m of memoriasPendientes) {
     const ordenLocal = await db.ordenes.get(m.orden_id)
-    if (!ordenLocal) continue
+    if (!ordenLocal?.supabase_id) { resultados.errores++; continue }
     const { id, sync_pendiente, orden_id, mem1_pdf_blob, mem2_pdf_blob, mem1_foto_local, mem2_foto_local, ...data } = m
-    const { error } = await supabase.from('memorias_ecu').upsert({ ...data, orden_folio: ordenLocal.folio })
+    const { error } = await supabase.from('memorias_ecu').upsert({ ...data, orden_id: ordenLocal.supabase_id }, { onConflict: 'orden_id' })
     if (!error) { await db.memorias_ecu.update(id, { sync_pendiente: false }); resultados.ok++ }
     else resultados.errores++
   }
@@ -121,9 +121,9 @@ export async function sincronizar() {
   const cierresPendientes = await db.cierres.filter(o => !!o.sync_pendiente).toArray()
   for (const c of cierresPendientes) {
     const ordenLocal = await db.ordenes.get(c.orden_id)
-    if (!ordenLocal) continue
+    if (!ordenLocal?.supabase_id) { resultados.errores++; continue }
     const { id, sync_pendiente, orden_id, ...data } = c
-    const { error } = await supabase.from('cierres').upsert({ ...data, orden_folio: ordenLocal.folio })
+    const { error } = await supabase.from('cierres').upsert({ ...data, orden_id: ordenLocal.supabase_id }, { onConflict: 'orden_id' })
     if (!error) { await db.cierres.update(id, { sync_pendiente: false }); resultados.ok++ }
     else resultados.errores++
   }

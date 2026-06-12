@@ -37,8 +37,8 @@ export function useOrdenCompleta(ordenId) {
     let evidenciasFinal = evidencias
 
     // Completar desde Supabase los datos que no estén en este dispositivo
-    if (orden?.folio) {
-      const folio = orden.folio
+    if (orden?.supabase_id) {
+      const ordenSupabaseId = orden.supabase_id
       const [
         { data: equipoRemoto },
         { data: tiemposRemoto },
@@ -48,13 +48,13 @@ export function useOrdenCompleta(ordenId) {
         { data: cierreRemoto },
         { data: evidenciasRemotas },
       ] = await Promise.all([
-        equipoFinal      ? Promise.resolve({ data: null }) : supabase.from('equipos_orden').select('*').eq('orden_folio', folio).maybeSingle(),
-        tiemposFinal     ? Promise.resolve({ data: null }) : supabase.from('tiempos').select('*').eq('orden_folio', folio).maybeSingle(),
-        diagnosticoFinal ? Promise.resolve({ data: null }) : supabase.from('diagnosticos').select('*').eq('orden_folio', folio).maybeSingle(),
-        memoriaFinal     ? Promise.resolve({ data: null }) : supabase.from('memorias_ecu').select('*').eq('orden_folio', folio).maybeSingle(),
-        partesFinal?.length ? Promise.resolve({ data: null }) : supabase.from('partes').select('*').eq('orden_folio', folio),
-        cierreFinal      ? Promise.resolve({ data: null }) : supabase.from('cierres').select('*').eq('orden_folio', folio).maybeSingle(),
-        evidenciasFinal?.length ? Promise.resolve({ data: null }) : supabase.from('evidencia').select('*').eq('orden_folio', folio),
+        equipoFinal      ? Promise.resolve({ data: null }) : supabase.from('equipos_orden').select('*').eq('orden_id', ordenSupabaseId).maybeSingle(),
+        tiemposFinal     ? Promise.resolve({ data: null }) : supabase.from('tiempos').select('*').eq('orden_id', ordenSupabaseId).maybeSingle(),
+        diagnosticoFinal ? Promise.resolve({ data: null }) : supabase.from('diagnosticos').select('*').eq('orden_id', ordenSupabaseId).maybeSingle(),
+        memoriaFinal     ? Promise.resolve({ data: null }) : supabase.from('memorias_ecu').select('*').eq('orden_id', ordenSupabaseId).maybeSingle(),
+        partesFinal?.length ? Promise.resolve({ data: null }) : supabase.from('partes').select('*').eq('orden_id', ordenSupabaseId),
+        cierreFinal      ? Promise.resolve({ data: null }) : supabase.from('cierres').select('*').eq('orden_id', ordenSupabaseId).maybeSingle(),
+        evidenciasFinal?.length ? Promise.resolve({ data: null }) : supabase.from('evidencia').select('*').eq('orden_id', ordenSupabaseId),
       ])
 
       equipoFinal      = equipoFinal      || equipoRemoto      || equipoFinal
