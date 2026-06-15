@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useOnline } from '../hooks/useOnline'
 import { db } from '../lib/db'
@@ -103,7 +103,15 @@ export default function Dashboard({ onVerOrden }) {
   }, [isOnline, user])
 
   useEffect(() => { cargarOrdenes() }, [isOnline, user])
-  useEffect(() => { if (isOnline && pendientes > 0) handleSync() }, [isOnline])
+
+  const autoSyncHecho = useRef(false)
+  useEffect(() => {
+    if (!isOnline) { autoSyncHecho.current = false; return }
+    if (pendientes > 0 && !autoSyncHecho.current) {
+      autoSyncHecho.current = true
+      handleSync()
+    }
+  }, [isOnline, pendientes])
 
   const handleSync = async () => {
     if (!isOnline || syncing) return
