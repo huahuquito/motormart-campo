@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
-import { db } from '../lib/db'
+import { useState, useCallback } from 'react'
 import { formatFecha } from '../lib/utils'
 import { useAuth } from '../hooks/useAuth'
+import { useOrdenCompleta } from '../hooks/useOrdenCompleta'
 import { ArrowLeft, Wrench, Clock, FileText, Camera, PenLine, ChevronRight, CheckCircle, Cpu, FileDown, LogOut } from 'lucide-react'
 import EquipoForm from './orden/EquipoForm'
 import TiemposForm from './orden/TiemposForm'
@@ -23,51 +23,32 @@ const PASOS = [
 
 export default function OrdenDetalle({ ordenId, onBack, onVerReporte }) {
   const { signOut } = useAuth()
-  const [orden, setOrden] = useState(null)
   const [paso, setPaso] = useState(null)
-  const [progreso, setProgreso] = useState({})
+  const { data, recargar: recargarCompleta } = useOrdenCompleta(ordenId)
+  const orden = data?.orden
 
-  const recargar = useCallback(() => db.ordenes.get(ordenId).then(setOrden), [ordenId])
-
-  const cargarProgreso = useCallback(async () => {
-    const [equipo, tiempos, diag, memoria, evidencia, cierre] = await Promise.all([
-      db.equipos_orden.where('orden_id').equals(ordenId).first(),
-      db.tiempos.where('orden_id').equals(ordenId).first(),
-      db.diagnosticos.where('orden_id').equals(ordenId).first(),
-      db.memorias_ecu.where('orden_id').equals(ordenId).first(),
-      db.evidencia.where('orden_id').equals(ordenId).count(),
-      db.cierres.where('orden_id').equals(ordenId).first(),
-    ])
-    setProgreso({
-      equipo:      !!equipo,
-      tiempos:     !!tiempos,
-      diagnostico: !!(diag?.falla_reportada || diag?.diagnostico_final),
-      memoria:     !!memoria,
-      evidencia:   evidencia > 0,
-      trabajo:     !!(cierre?.trabajo_realizado),
-      cierre:      !!(cierre?.resultado),
-    })
-  }, [ordenId])
-
-  useEffect(() => {
-    recargar()
-    cargarProgreso()
-  }, [ordenId])
+  const progreso = data ? {
+    equipo:      !!data.equipo,
+    tiempos:     !!data.tiempos,
+    diagnostico: !!(data.diagnostico?.falla_reportada || data.diagnostico?.diag_final),
+    memoria:     !!data.memoria,
+    evidencia:   Object.values(data.fotosPorCategoria).some(fotos => fotos.length > 0),
+    trabajo:     !!(data.cierre?.trabajo_realizado),
+    cierre:      !!(data.cierre?.resultado),
+  } : {}
 
   const volverYActualizar = useCallback(() => {
     setPaso(null)
-    recargar()
-    cargarProgreso()
-  }, [recargar, cargarProgreso])
+    recargarCompleta()
+  }, [recargarCompleta])
 
   const handleCerrada = useCallback((email) => {
     setPaso(null)
-    recargar()
-    cargarProgreso()
+    recargarCompleta()
     if (email) {
       setTimeout(() => onVerReporte(ordenId, email), 300)
     }
-  }, [recargar, cargarProgreso, ordenId, onVerReporte])
+  }, [recargarCompleta, ordenId, onVerReporte])
 
   if (!orden) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
