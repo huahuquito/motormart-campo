@@ -83,8 +83,14 @@ export default function Dashboard({ onVerOrden }) {
                 created_at: orden.created_at,
                 updated_at: orden.updated_at,
               })
-            } else if (!existe.supabase_id) {
-              await db.ordenes.update(existe.id, { supabase_id: orden.id })
+            } else {
+              const actualizar = {}
+              if (!existe.supabase_id) actualizar.supabase_id = orden.id
+              if (!existe.sync_pendiente && existe.estatus !== orden.estatus) actualizar.estatus = orden.estatus
+              if (existe.numero_os == null && orden.numero_os != null) actualizar.numero_os = orden.numero_os
+              if (existe.nci == null && orden.nci != null) actualizar.nci = orden.nci
+              if (existe.updated_at !== orden.updated_at) actualizar.updated_at = orden.updated_at
+              if (Object.keys(actualizar).length > 0) await db.ordenes.update(existe.id, actualizar)
             }
           }
         }
