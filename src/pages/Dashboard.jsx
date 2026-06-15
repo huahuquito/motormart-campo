@@ -114,7 +114,7 @@ export default function Dashboard({ onVerOrden }) {
   }, [isOnline, pendientes])
 
   const handleSync = async () => {
-    if (!isOnline || syncing) return
+    if (syncing) return
     setSyncing(true)
     try {
       const resultado = await sincronizar()
@@ -171,7 +171,7 @@ export default function Dashboard({ onVerOrden }) {
               {isOnline ? 'En línea' : 'Sin conexión'}
             </div>
             {pendientes > 0 && (
-              <button onClick={isOnline ? handleSync : () => setSyncMsg({ tipo: 'error', texto: 'Sin conexión para sincronizar' })}
+              <button onClick={handleSync}
                 disabled={syncing}
                 className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-yellow-400/20 text-yellow-200 disabled:opacity-50">
                 <RefreshCw size={12} className={syncing ? 'animate-spin' : ''} />
