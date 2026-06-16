@@ -5,7 +5,7 @@ async function esperarRender() {
   await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
 }
 
-export async function generarPDFOrden(elementoId, nombreArchivo) {
+export async function generarPDFOrden(elementoId, nombreArchivo, { download = true } = {}) {
   const elemento = document.getElementById(elementoId)
   if (!elemento) throw new Error('Elemento no encontrado')
 
@@ -85,6 +85,6 @@ export async function generarPDFOrden(elementoId, nombreArchivo) {
     pdf.addImage(firmaInfo.src, 'PNG', firmaXmm, yEnPagina, firmaWmm, firmaHmm)
   }
 
-  pdf.save(nombreArchivo)
+  if (download) pdf.save(nombreArchivo)
   return pdf.output('datauristring')
 }

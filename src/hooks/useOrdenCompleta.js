@@ -39,23 +39,33 @@ export function useOrdenCompleta(ordenId) {
     // Completar desde Supabase los datos que no estén en este dispositivo
     if (orden?.supabase_id) {
       const ordenSupabaseId = orden.supabase_id
+      console.log('[OrdenCompleta] Buscando datos remotos para supabase_id:', ordenSupabaseId)
       const [
-        { data: equipoRemoto },
-        { data: tiemposRemoto },
-        { data: diagnosticoRemoto },
-        { data: memoriaRemota },
-        { data: partesRemotas },
-        { data: cierreRemoto },
-        { data: evidenciasRemotas },
+        { data: equipoRemoto,      error: errEquipo },
+        { data: tiemposRemoto,     error: errTiempos },
+        { data: diagnosticoRemoto, error: errDiag },
+        { data: memoriaRemota,     error: errMem },
+        { data: partesRemotas,     error: errPartes },
+        { data: cierreRemoto,      error: errCierre },
+        { data: evidenciasRemotas, error: errEvidencia },
       ] = await Promise.all([
-        equipoFinal      ? Promise.resolve({ data: null }) : supabase.from('equipos_orden').select('*').eq('orden_id', ordenSupabaseId).maybeSingle(),
-        tiemposFinal     ? Promise.resolve({ data: null }) : supabase.from('tiempos').select('*').eq('orden_id', ordenSupabaseId).maybeSingle(),
-        diagnosticoFinal ? Promise.resolve({ data: null }) : supabase.from('diagnosticos').select('*').eq('orden_id', ordenSupabaseId).maybeSingle(),
-        memoriaFinal     ? Promise.resolve({ data: null }) : supabase.from('memorias_ecu').select('*').eq('orden_id', ordenSupabaseId).maybeSingle(),
-        partesFinal?.length ? Promise.resolve({ data: null }) : supabase.from('partes').select('*').eq('orden_id', ordenSupabaseId),
-        cierreFinal      ? Promise.resolve({ data: null }) : supabase.from('cierres').select('*').eq('orden_id', ordenSupabaseId).maybeSingle(),
-        evidenciasFinal?.length ? Promise.resolve({ data: null }) : supabase.from('evidencia').select('*').eq('orden_id', ordenSupabaseId),
+        equipoFinal      ? Promise.resolve({ data: null, error: null }) : supabase.from('equipos_orden').select('*').eq('orden_id', ordenSupabaseId).maybeSingle(),
+        tiemposFinal     ? Promise.resolve({ data: null, error: null }) : supabase.from('tiempos').select('*').eq('orden_id', ordenSupabaseId).maybeSingle(),
+        diagnosticoFinal ? Promise.resolve({ data: null, error: null }) : supabase.from('diagnosticos').select('*').eq('orden_id', ordenSupabaseId).maybeSingle(),
+        memoriaFinal     ? Promise.resolve({ data: null, error: null }) : supabase.from('memorias_ecu').select('*').eq('orden_id', ordenSupabaseId).maybeSingle(),
+        partesFinal?.length ? Promise.resolve({ data: null, error: null }) : supabase.from('partes').select('*').eq('orden_id', ordenSupabaseId),
+        cierreFinal      ? Promise.resolve({ data: null, error: null }) : supabase.from('cierres').select('*').eq('orden_id', ordenSupabaseId).maybeSingle(),
+        evidenciasFinal?.length ? Promise.resolve({ data: null, error: null }) : supabase.from('evidencia').select('*').eq('orden_id', ordenSupabaseId),
       ])
+
+      const errores = { errEquipo, errTiempos, errDiag, errMem, errPartes, errCierre, errEvidencia }
+      const hayErrores = Object.values(errores).some(Boolean)
+      if (hayErrores) console.warn('[OrdenCompleta] Errores en queries de Supabase:', errores)
+      console.log('[OrdenCompleta] Datos remotos recibidos:', {
+        equipo: !!equipoRemoto, tiempos: !!tiemposRemoto, diagnostico: !!diagnosticoRemoto,
+        memoria: !!memoriaRemota, partes: partesRemotas?.length ?? 0,
+        cierre: !!cierreRemoto, evidencias: evidenciasRemotas?.length ?? 0,
+      })
 
       equipoFinal      = equipoFinal      || equipoRemoto      || equipoFinal
       tiemposFinal     = tiemposFinal     || tiemposRemoto     || tiemposFinal
@@ -64,6 +74,8 @@ export function useOrdenCompleta(ordenId) {
       cierreFinal      = cierreFinal      || cierreRemoto      || cierreFinal
       partesFinal      = partesFinal?.length      ? partesFinal      : (partesRemotas || partesFinal)
       evidenciasFinal  = evidenciasFinal?.length  ? evidenciasFinal  : (evidenciasRemotas || evidenciasFinal)
+    } else {
+      console.warn('[OrdenCompleta] La orden no tiene supabase_id — no se puede buscar en Supabase. orden_id local:', ordenId, '| orden:', orden)
     }
 
     // Las fotos remotas se guardan en `ruta_storage` (URL pública), las locales en `ruta_local`

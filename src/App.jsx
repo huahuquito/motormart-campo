@@ -35,11 +35,15 @@ export default function App() {
     // Buscar por folio en IndexedDB
     const local = await db.ordenes.where('folio').equals(ordenSupabase.folio).first()
     if (local) {
-      // Actualizar campos que pudieron agregarse después de la descarga inicial
+      // Actualizar campos que pudieron cambiar en Supabase desde otro dispositivo
+      // (p. ej. el técnico cierra la orden y el admin la abre desde su propia copia local)
       const actualizar = {}
       if (!local.supabase_id) actualizar.supabase_id = ordenSupabase.id
       if (local.numero_os == null && ordenSupabase.numero_os != null) actualizar.numero_os = ordenSupabase.numero_os
       if (local.nci == null && ordenSupabase.nci != null) actualizar.nci = ordenSupabase.nci
+      if (!local.sync_pendiente && local.estatus !== ordenSupabase.estatus) actualizar.estatus = ordenSupabase.estatus
+      if (local.tecnico_id !== ordenSupabase.tecnico_id) actualizar.tecnico_id = ordenSupabase.tecnico_id
+      if (local.tecnico_nombre !== ordenSupabase.tecnico_nombre) actualizar.tecnico_nombre = ordenSupabase.tecnico_nombre
       if (Object.keys(actualizar).length > 0) await db.ordenes.update(local.id, actualizar)
       return local.id
     }
