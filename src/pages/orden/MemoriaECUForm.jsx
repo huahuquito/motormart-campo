@@ -172,7 +172,7 @@ function SeccionMemoria({ label, tipo, datos, onChange, isOnline, ordenFolio }) 
   )
 }
 
-export default function MemoriaECUForm({ orden, onBack, onGuardado }) {
+export default function MemoriaECUForm({ orden, initialData, onBack, onGuardado }) {
   const isOnline = useOnline()
   const [aplica, setAplica] = useState(true)
   const [herramienta, setHerramienta] = useState('')
@@ -187,26 +187,26 @@ export default function MemoriaECUForm({ orden, onBack, onGuardado }) {
 
   useEffect(() => {
     db.memorias_ecu.where('orden_id').equals(orden.id).first().then(m => {
-      if (!m) return
-      setAplica(m.aplica ?? true)
-      setHerramienta(m.herramienta || '')
-      setComentarios(m.comentarios || '')
-      // Restaurar solo los campos conocidos — no mezclar el objeto Dexie completo
+      const src = m || initialData
+      if (!src) return
+      setAplica(src.aplica ?? true)
+      setHerramienta(src.herramienta || '')
+      setComentarios(src.comentarios || '')
       setMems({
-        mem1_descargada:  m.mem1_descargada  ?? false,
-        mem1_foto_local:  m.mem1_foto_local  || null,
-        mem1_foto_url:    m.mem1_foto_url    || null,
-        mem1_pdf_url:     m.mem1_pdf_url     || null,
-        mem1_pdf_nombre:  m.mem1_pdf_nombre  || null,
+        mem1_descargada:  src.mem1_descargada  ?? false,
+        mem1_foto_local:  src.mem1_foto_local  || null,
+        mem1_foto_url:    src.mem1_foto_url    || null,
+        mem1_pdf_url:     src.mem1_pdf_url     || null,
+        mem1_pdf_nombre:  src.mem1_pdf_nombre  || null,
         mem1_pdf_blob:    null,
-        mem1_notas:       m.mem1_notas       || '',
-        mem2_descargada:  m.mem2_descargada  ?? false,
-        mem2_foto_local:  m.mem2_foto_local  || null,
-        mem2_foto_url:    m.mem2_foto_url    || null,
-        mem2_pdf_url:     m.mem2_pdf_url     || null,
-        mem2_pdf_nombre:  m.mem2_pdf_nombre  || null,
+        mem1_notas:       src.mem1_notas       || '',
+        mem2_descargada:  src.mem2_descargada  ?? false,
+        mem2_foto_local:  src.mem2_foto_local  || null,
+        mem2_foto_url:    src.mem2_foto_url    || null,
+        mem2_pdf_url:     src.mem2_pdf_url     || null,
+        mem2_pdf_nombre:  src.mem2_pdf_nombre  || null,
         mem2_pdf_blob:    null,
-        mem2_notas:       m.mem2_notas       || '',
+        mem2_notas:       src.mem2_notas       || '',
       })
     })
   }, [orden.id])

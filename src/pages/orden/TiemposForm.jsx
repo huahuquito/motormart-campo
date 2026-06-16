@@ -20,7 +20,7 @@ function BtnTiempo({ label, valor, onCapturar }) {
   )
 }
 
-export default function TiemposForm({ orden, onBack, onGuardado }) {
+export default function TiemposForm({ orden, initialData, onBack, onGuardado }) {
   const [tiempos, setTiempos] = useState({
     hora_llegada: null,
     hora_inicio: null,
@@ -31,7 +31,16 @@ export default function TiemposForm({ orden, onBack, onGuardado }) {
 
   useEffect(() => {
     db.tiempos.where('orden_id').equals(orden.id).first().then(t => {
-      if (t) setTiempos(t)
+      if (t) {
+        setTiempos(t)
+      } else if (initialData) {
+        setTiempos({
+          hora_llegada: initialData.hora_llegada || null,
+          hora_inicio:  initialData.hora_inicio  || null,
+          hora_fin:     initialData.hora_fin      || null,
+          hora_salida:  initialData.hora_salida   || null,
+        })
+      }
     })
   }, [orden.id])
 

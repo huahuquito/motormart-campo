@@ -58,13 +58,13 @@ export default function OrdenDetalle({ ordenId, onBack, onVerReporte }) {
 
   const esCerrada = orden.estatus === 'Cerrada técnica' || orden.estatus === 'Cerrada administrativa'
 
-  if (paso === 'equipo')       return <EquipoForm      orden={orden} onBack={volverYActualizar} onGuardado={volverYActualizar} />
-  if (paso === 'tiempos')     return <TiemposForm     orden={orden} onBack={volverYActualizar} onGuardado={volverYActualizar} />
-  if (paso === 'diagnostico') return <DiagnosticoForm orden={orden} onBack={volverYActualizar} onGuardado={volverYActualizar} />
-  if (paso === 'memoria')     return <MemoriaECUForm  orden={orden} onBack={volverYActualizar} onGuardado={volverYActualizar} />
+  if (paso === 'equipo')       return <EquipoForm      orden={orden} initialData={data?.equipo} initialFotos={{ motor: data?.fotoPlacaMotor, maquina: data?.fotoPlacaMaquina }} onBack={volverYActualizar} onGuardado={volverYActualizar} />
+  if (paso === 'tiempos')     return <TiemposForm     orden={orden} initialData={data?.tiempos} onBack={volverYActualizar} onGuardado={volverYActualizar} />
+  if (paso === 'diagnostico') return <DiagnosticoForm orden={orden} initialData={data?.diagnostico} onBack={volverYActualizar} onGuardado={volverYActualizar} />
+  if (paso === 'memoria')     return <MemoriaECUForm  orden={orden} initialData={data?.memoria} onBack={volverYActualizar} onGuardado={volverYActualizar} />
   if (paso === 'evidencia')   return <EvidenciaForm   orden={orden} onBack={volverYActualizar} onGuardado={volverYActualizar} />
-  if (paso === 'trabajo')     return <TrabajoForm     orden={orden} onBack={volverYActualizar} onGuardado={volverYActualizar} />
-  if (paso === 'cierre')      return <CierreForm      orden={orden} onBack={volverYActualizar} onCerrada={handleCerrada} />
+  if (paso === 'trabajo')     return <TrabajoForm     orden={orden} initialData={data?.cierre} initialPartes={data?.partes} onBack={volverYActualizar} onGuardado={volverYActualizar} />
+  if (paso === 'cierre')      return <CierreForm      orden={orden} initialData={data?.cierre} onBack={volverYActualizar} onCerrada={handleCerrada} />
 
   return (
     <div className="min-h-screen" style={{ background: '#f1f5f9' }}>

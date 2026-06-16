@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { db } from '../../lib/db'
 import { ArrowLeft } from 'lucide-react'
 
-export default function DiagnosticoForm({ orden, onBack, onGuardado }) {
+export default function DiagnosticoForm({ orden, initialData, onBack, onGuardado }) {
   const [form, setForm] = useState({
     falla_reportada: '',
     sintomas: '',
@@ -16,7 +16,18 @@ export default function DiagnosticoForm({ orden, onBack, onGuardado }) {
 
   useEffect(() => {
     db.diagnosticos.where('orden_id').equals(orden.id).first().then(d => {
-      if (d) setForm(d)
+      if (d) {
+        setForm(d)
+      } else if (initialData) {
+        setForm(f => ({
+          ...f,
+          falla_reportada:  initialData.falla_reportada  || '',
+          sintomas:         initialData.sintomas         || '',
+          codigos:          initialData.codigos          || '',
+          diag_preliminar:  initialData.diag_preliminar  || '',
+          diag_final:       initialData.diag_final       || '',
+        }))
+      }
     })
   }, [orden.id])
 

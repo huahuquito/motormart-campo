@@ -2,19 +2,21 @@ import { useState, useEffect } from 'react'
 import { db } from '../../lib/db'
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
 
-export default function TrabajoForm({ orden, onBack, onGuardado }) {
+export default function TrabajoForm({ orden, initialData, initialPartes, onBack, onGuardado }) {
   const [trabajo, setTrabajo] = useState('')
   const [partes, setPartes] = useState([])
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState({})
 
   useEffect(() => {
-    // Cargar trabajo guardado
     db.cierres.where('orden_id').equals(orden.id).first().then(c => {
       if (c?.trabajo_realizado) setTrabajo(c.trabajo_realizado)
+      else if (initialData?.trabajo_realizado) setTrabajo(initialData.trabajo_realizado)
     })
-    // Cargar partes guardadas
-    db.partes.where('orden_id').equals(orden.id).toArray().then(setPartes)
+    db.partes.where('orden_id').equals(orden.id).toArray().then(ps => {
+      if (ps.length) setPartes(ps)
+      else if (initialPartes?.length) setPartes(initialPartes)
+    })
   }, [orden.id])
 
   const agregarParte = () => {

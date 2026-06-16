@@ -3,7 +3,7 @@ import { db } from '../../lib/db'
 import { ArrowLeft, Camera } from 'lucide-react'
 import { comprimirImagenBase64 } from '../../lib/utils'
 
-export default function EquipoForm({ orden, onBack, onGuardado }) {
+export default function EquipoForm({ orden, initialData, initialFotos, onBack, onGuardado }) {
   const [form, setForm] = useState({
     marca_motor: '', modelo_motor: '', serie_motor: '',
     horas_motor: '', modelo_maquina: '', serie_maquina: '',
@@ -15,16 +15,28 @@ export default function EquipoForm({ orden, onBack, onGuardado }) {
   const esGarantia = orden.tipo_servicio === 'Garantía Deutz'
 
   useEffect(() => {
-    // Cargar datos del equipo
     db.equipos_orden.where('orden_id').equals(orden.id).first().then(eq => {
-      if (eq) setForm(f => ({ ...f, ...eq }))
+      if (eq) {
+        setForm(f => ({ ...f, ...eq }))
+      } else if (initialData) {
+        setForm(f => ({
+          ...f,
+          marca_motor: initialData.marca_motor || '',
+          modelo_motor: initialData.modelo_motor || '',
+          serie_motor: initialData.serie_motor || '',
+          horas_motor: initialData.horas_motor || '',
+          modelo_maquina: initialData.modelo_maquina || '',
+          serie_maquina: initialData.serie_maquina || '',
+        }))
+      }
     })
-    // Cargar fotos ya guardadas
     db.evidencia.where('orden_id').equals(orden.id).toArray().then(evs => {
       const m = evs.find(e => e.categoria === 'placa_motor')
       const mq = evs.find(e => e.categoria === 'placa_maquina')
       if (m?.ruta_local) setFotoPlacaMotor(m.ruta_local)
+      else if (initialFotos?.motor) setFotoPlacaMotor(initialFotos.motor)
       if (mq?.ruta_local) setFotoPlacaMaquina(mq.ruta_local)
+      else if (initialFotos?.maquina) setFotoPlacaMaquina(initialFotos.maquina)
     })
   }, [orden.id])
 
@@ -61,8 +73,8 @@ export default function EquipoForm({ orden, onBack, onGuardado }) {
       await db.equipos_orden.add({ ...form, orden_id: orden.id, sync_pendiente: true, created_at: now, updated_at: now })
     }
 
-    // Guardar/actualizar foto placa motor
-    if (fotoPlacaMotor) {
+    // Solo guardar foto si es nueva captura local (base64), no URL remota de Supabase
+    if (fotoPlacaMotor && fotoPlacaMotor.startsWith('data:')) {
       const existe = await db.evidencia.where('orden_id').equals(orden.id)
         .and(e => e.categoria === 'placa_motor').first()
       if (existe) {
@@ -75,8 +87,7 @@ export default function EquipoForm({ orden, onBack, onGuardado }) {
       }
     }
 
-    // Guardar/actualizar foto placa máquina
-    if (fotoPlacaMaquina) {
+    if (fotoPlacaMaquina && fotoPlacaMaquina.startsWith('data:')) {
       const existe = await db.evidencia.where('orden_id').equals(orden.id)
         .and(e => e.categoria === 'placa_maquina').first()
       if (existe) {
