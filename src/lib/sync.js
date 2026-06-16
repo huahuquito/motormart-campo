@@ -69,41 +69,58 @@ export async function sincronizar() {
     else resultados.errores++
   }
 
-  // 5. Evidencia — sube fotos base64 a Supabase Storage
+  // 5. Evidencia — sube fotos a Storage y sincroniza registros (delete+insert por orden)
   const evidenciaPendiente = await db.evidencia.filter(o => !!o.sync_pendiente).toArray()
-  for (const ev of evidenciaPendiente) {
-    const ordenLocal = await db.ordenes.get(ev.orden_id)
-    if (!ordenLocal?.supabase_id) { resultados.errores++; continue }
-    try {
-      let ruta_storage = ev.ruta_storage
-      // Si tiene base64 local y no tiene URL remota, sube la foto
-      if (ev.ruta_local && ev.ruta_local.startsWith('data:') && !ruta_storage) {
-        const path = `${ordenLocal.folio}/${ev.categoria}_${ev.id}.jpg`
-        ruta_storage = await subirFotoStorage(ev.ruta_local, path)
-        await db.evidencia.update(ev.id, { ruta_storage })
+  const evPorOrden = evidenciaPendiente.reduce((acc, ev) => {
+    if (!acc[ev.orden_id]) acc[ev.orden_id] = []
+    acc[ev.orden_id].push(ev)
+    return acc
+  }, {})
+  for (const [localOrdenId, items] of Object.entries(evPorOrden)) {
+    const ordenLocal = await db.ordenes.get(Number(localOrdenId))
+    if (!ordenLocal?.supabase_id) { resultados.errores += items.length; continue }
+    // Subir fotos que aún no tienen URL remota
+    const itemsListos = []
+    for (const ev of items) {
+      try {
+        let ruta_storage = ev.ruta_storage
+        if (ev.ruta_local?.startsWith('data:') && !ruta_storage) {
+          const path = `${ordenLocal.folio}/${ev.categoria}_${ev.id}.jpg`
+          ruta_storage = await subirFotoStorage(ev.ruta_local, path)
+          await db.evidencia.update(ev.id, { ruta_storage })
+        }
+        itemsListos.push({ ...ev, ruta_storage })
+      } catch {
+        resultados.errores++
       }
+    }
+    // Borrar registros existentes en Supabase y reinsertar (evita duplicados sin clave única)
+    await supabase.from('evidencia').delete().eq('orden_id', ordenLocal.supabase_id)
+    for (const ev of itemsListos) {
       const { id, sync_pendiente, orden_id, ruta_local, ...data } = ev
-      const { error } = await supabase.from('evidencia').upsert({
-        ...data,
-        ruta_storage,
-        orden_id: ordenLocal.supabase_id,
-      })
+      const { error } = await supabase.from('evidencia').insert({ ...data, orden_id: ordenLocal.supabase_id })
       if (!error) { await db.evidencia.update(ev.id, { sync_pendiente: false }); resultados.ok++ }
       else resultados.errores++
-    } catch {
-      resultados.errores++
     }
   }
 
-  // 6. Partes
+  // 6. Partes — delete+insert por orden (no hay clave única por parte)
   const partesPendientes = await db.partes.filter(o => !!o.sync_pendiente).toArray()
-  for (const p of partesPendientes) {
-    const ordenLocal = await db.ordenes.get(p.orden_id)
-    if (!ordenLocal?.supabase_id) { resultados.errores++; continue }
-    const { id, sync_pendiente, orden_id, ...data } = p
-    const { error } = await supabase.from('partes').upsert({ ...data, orden_id: ordenLocal.supabase_id })
-    if (!error) { await db.partes.update(id, { sync_pendiente: false }); resultados.ok++ }
-    else resultados.errores++
+  const partesPorOrden = partesPendientes.reduce((acc, p) => {
+    if (!acc[p.orden_id]) acc[p.orden_id] = []
+    acc[p.orden_id].push(p)
+    return acc
+  }, {})
+  for (const [localOrdenId, items] of Object.entries(partesPorOrden)) {
+    const ordenLocal = await db.ordenes.get(Number(localOrdenId))
+    if (!ordenLocal?.supabase_id) { resultados.errores += items.length; continue }
+    await supabase.from('partes').delete().eq('orden_id', ordenLocal.supabase_id)
+    for (const p of items) {
+      const { id, sync_pendiente, orden_id, ...data } = p
+      const { error } = await supabase.from('partes').insert({ ...data, orden_id: ordenLocal.supabase_id })
+      if (!error) { await db.partes.update(p.id, { sync_pendiente: false }); resultados.ok++ }
+      else resultados.errores++
+    }
   }
 
   // 7. Memorias ECU
